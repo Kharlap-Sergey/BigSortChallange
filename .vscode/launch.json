@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C#: FileGenerationUtil",
+      "type": "dotnet",
+      "request": "launch",
+      "projectPath": "${workspaceFolder}\\src\\FileGenerationUtil\\FileGenerationUtil.csproj",
+      "launchConfigurationId": "TargetFramework=;FileGenerationUtil"
+    },
+    {
+      "name": "C#: Sorter",
+      "type": "dotnet",
+      "request": "launch",
+      "projectPath": "${workspaceFolder}\\src\\Sorter\\Sorter.csproj",
+      "launchConfigurationId": "TargetFramework=;Sorter",
+    }
+  ]
+}

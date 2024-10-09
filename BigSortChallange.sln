@@ -7,6 +7,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{761864A1-892
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileGenerationUtil", "src\FileGenerationUtil\FileGenerationUtil.csproj", "{4061C539-6222-46B7-B81D-24BF43C2BB9A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sorter", "src\Sorter\Sorter.csproj", "{C4E82562-B740-47CC-8AB2-F507EA0B31FD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,8 +22,13 @@ Global
 		{4061C539-6222-46B7-B81D-24BF43C2BB9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4061C539-6222-46B7-B81D-24BF43C2BB9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4061C539-6222-46B7-B81D-24BF43C2BB9A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C4E82562-B740-47CC-8AB2-F507EA0B31FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C4E82562-B740-47CC-8AB2-F507EA0B31FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C4E82562-B740-47CC-8AB2-F507EA0B31FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C4E82562-B740-47CC-8AB2-F507EA0B31FD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4061C539-6222-46B7-B81D-24BF43C2BB9A} = {761864A1-8926-4729-AD11-5262FBB546C1}
+		{C4E82562-B740-47CC-8AB2-F507EA0B31FD} = {761864A1-8926-4729-AD11-5262FBB546C1}
 	EndGlobalSection
 EndGlobal
