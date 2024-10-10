@@ -28,7 +28,8 @@ String constraint - it is generated based on --source file, however, the default
 
 Taking these into an account we are getting ~ 670 000 000 lines for a 100GB file.
 It is a quite time consuming even for the simple read-write operation.
-I didn't test it for 100Gb, but I did for 10Gb and full sycle took me ~13min
+I didn't test it for 100Gb, but I did for 10Gb and full sycle took me ~13min.
+
 I coulde've taken bigger string length to reduce the number of lines, but I didn't. 
 I don't think it is fare solution, but I can't generate better one, at least whithout further investigations on the topic.
 
