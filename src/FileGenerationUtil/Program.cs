@@ -19,7 +19,7 @@ var outputFileOption = new Option<string>(
   getDefaultValue: () => defaultFilepath,
   description: "The file to save generated content to"
 );
-var contentSizeOption = new Option<int>(
+var contentSizeOption = new Option<long>(
   name: "--size",
   getDefaultValue: () => 1024 * 1024 * 1024,
   description: "The generated content size in bytes"
@@ -34,7 +34,7 @@ rootCommand.AddOption(outputFileOption);
 rootCommand.AddOption(contentSizeOption);
 rootCommand.AddOption(sourceFileOption);
 
-rootCommand.SetHandler(async (string outputPath, int contentSize, string sourceFilePath) =>
+rootCommand.SetHandler(async (string outputPath, long contentSize, string sourceFilePath) =>
 {
   if (!File.Exists(sourceFilePath))
   {
@@ -65,14 +65,9 @@ rootCommand.SetHandler(async (string outputPath, int contentSize, string sourceF
 return await rootCommand.InvokeAsync(args);
 
 
-async Task GenerateFile(string path, int contentSize, string sourceFilePath)
+async Task GenerateFile(string path, long contentSize, string sourceFilePath)
 {
-  if (File.Exists(path))
-  {
-    File.Delete(path);
-  }
-
-  var currentSize = 0;
+  long currentSize = 0;
   string textPart;
   string numberPart;
   var source = await File.ReadAllLinesAsync(sourceFilePath);
@@ -80,12 +75,23 @@ async Task GenerateFile(string path, int contentSize, string sourceFilePath)
   IContentGenerator<int> numberPartGenerator = new RandomNumberGenerator();
 
   using var fs = File.Create(path);
-  while (currentSize <= contentSize)
+  int percentage = 10;
+  while (currentSize < contentSize)
   {
     textPart = textPartGenerator.GetNext();
     numberPart = numberPartGenerator.GetNext().ToString();
     var buffer = UTF8Encoding.UTF8.GetBytes($"{numberPart}.{textPart}\n");
     await fs.WriteAsync(buffer, 0, buffer.Length);
     currentSize += buffer.Length;
+    if ((double)currentSize / contentSize * 100.0 > percentage)
+    {
+      ConsoleHelper.WriteWithColor(
+          () =>
+          {
+            Console.WriteLine($"{percentage}%");
+          },
+          ConsoleColor.Blue);
+      percentage += 10;
+    }
   }
 }
