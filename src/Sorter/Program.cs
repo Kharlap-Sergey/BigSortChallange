@@ -8,6 +8,7 @@ var defaultFilepath = @$"{currentDirectory}\sorted.txt";
 var tempPath = @$".\temp\3226675\";
 var rootCommand = new RootCommand("The Program to sort big file");
 int chunkSize = 1_000_000;
+
 // int chunkSize = 10;
 
 var outputFileOption = new Option<string>(
@@ -56,94 +57,111 @@ rootCommand.SetHandler(async (string outputPath, string sourceFilePath) =>
       Console.WriteLine("Something went wrong: {0}", ex.Message);
     }, ConsoleColor.Red);
   }
-  finally{
+  finally
+  {
     stopwatch.Stop();
-    TimeSpan ts = stopwatch.Elapsed;
-    string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",
-            ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
-    ConsoleHelper.WriteWithColor(() =>
-    {
-      Console.WriteLine("RunTime " + elapsedTime);
-    }, ConsoleColor.Blue);
+    ConsoleHelper.PrintElapsedTime(stopwatch.Elapsed, "Run time");
   }
 }, outputFileOption, sourceFileOption);
 
 return await rootCommand.InvokeAsync(args);
 
-
 async Task SortFile(string inputPath, string outputPath, int linesPerChunk, string tempDirectory)
 {
-  //read and split by chunks
   Directory.CreateDirectory(tempDirectory);
+  var chunksDirectory = tempDirectory + "\\chunks\\";
+  var sortedChunksDirectory = tempDirectory + "\\sorted\\";
+  Stopwatch stopwatch = new Stopwatch();
 
+  //read and split by chunks
+  stopwatch.Start();
+  await SplitByChunks(inputPath, linesPerChunk, chunksDirectory);
+  stopwatch.Stop();
+  ConsoleHelper.PrintElapsedTime(stopwatch.Elapsed, "Elapsed for chunk creation");
+
+  //sort chunks
+  stopwatch.Restart();
+  await SortChunks(chunksDirectory, sortedChunksDirectory);
+  stopwatch.Stop();
+  ConsoleHelper.PrintElapsedTime(stopwatch.Elapsed, "Elapsed for chunk sorting");
+
+  //merge 
+  stopwatch.Restart();
+  List<IAsyncEnumerator<Content>> sources = new();
+  var files = Directory.EnumerateFiles(sortedChunksDirectory);
+  foreach (var file in files)
+  {
+    var reader = ContentReader.ReadFile(file);
+    var source = reader.GetAsyncEnumerator();
+    if (await source.MoveNextAsync())
+      sources.Add(source);
+  }
+  if (File.Exists(outputPath))
+    File.Delete(outputPath);
+  var mergeSorter = new MergeSorter<Content>(sources, ContentComparator.Default);
+  using var writer = new StreamWriter(outputPath);
+  await foreach (var next in mergeSorter.MergeSort())
+  {
+    await writer.WriteLineAsync(next.ToString());
+  }
+
+  stopwatch.Stop();
+  ConsoleHelper.PrintElapsedTime(stopwatch.Elapsed, "Elapsed for chunk merging");
+
+  Directory.Delete(tempDirectory, true);
+}
+
+async Task SortChunks(string chunksDirectory, string outputDirectory)
+{
+  Directory.CreateDirectory(outputDirectory);
+  var files = Directory.EnumerateFiles(chunksDirectory);
+  await Parallel.ForEachAsync(
+    files,
+    async (file, cancellation) =>
+    {
+      var fileName = Path.GetFileName(file);
+      var output = Path.Combine(outputDirectory, fileName);
+
+      List<Content> contents = new();
+      await foreach (var content in ContentReader.ReadFile(file))
+      {
+        contents.Add(content);
+      }
+      File.Delete(file);
+      contents.Sort(ContentComparator.Default);
+
+      using var writer = new StreamWriter(output);
+      foreach (var content in contents)
+      {
+        await writer.WriteLineAsync(content.ToString());
+      }
+    }
+  );
+}
+
+async Task<int> SplitByChunks(string inputPath, int linesPerChunk, string outputDirectory)
+{
+  Directory.CreateDirectory(outputDirectory);
   int fileIndex = 0;
+
   using (StreamReader reader = new StreamReader(inputPath))
   {
     while (!reader.EndOfStream)
     {
-      string outputFile = Path.Combine(tempDirectory, $"input_chunk_{fileIndex}.txt");
-      using (StreamWriter writer1 = new StreamWriter(outputFile))
+      string outputFile = Path.Combine(outputDirectory, $"chunk_{fileIndex}.txt");
+      using (StreamWriter writer = new StreamWriter(outputFile))
       {
         for (int i = 0; i < linesPerChunk && !reader.EndOfStream; i++)
         {
           string? line = await reader.ReadLineAsync();
-          if(line == null)
+          if (line == null)
             continue;
-          await writer1.WriteLineAsync(line);
+          await writer.WriteLineAsync(line);
         }
       }
       fileIndex++;
     }
   }
 
-  //sort chunks
-  var comp = new ContentComparator();
-  var chunkIndexes = Enumerable.Range(0, fileIndex);
-  await Parallel.ForEachAsync(
-    chunkIndexes,
-    async (index, cancellation) => {
-      var path = Path.Combine(tempDirectory, $"input_chunk_{index}.txt");
-      var output = Path.Combine(tempDirectory, $"sorted_chunk_{index}.txt");
-
-      List<Content> contents = new();
-      using var reader = new StreamReader(path);
-      while (!reader.EndOfStream)
-      {
-        string? line = await reader.ReadLineAsync();
-        if(line == null)
-          continue;
-
-        contents.Add(Content.Parse(line));
-      }
-      contents.Sort(comp);
-
-      using var writer2 = new StreamWriter(output);
-      foreach(var content in contents){
-        await writer2.WriteLineAsync(content.ToString());
-      }
-    }
-  );
-  
-  //merge 
-  List<IAsyncEnumerator<Content>> sources = new();
-  for (int i = 0; i < fileIndex; i++){
-    var input = Path.Combine(tempDirectory, $"sorted_chunk_{i}.txt");
-    var reader = ContentReader.InitRead(input);
-    var source = reader.GetAsyncEnumerator();
-    if(await source.MoveNextAsync())
-      sources.Add(source);
-  }
-  
-  if (File.Exists(outputPath))
-  {
-    File.Delete(outputPath);
-  }
-
-  var mergeSorter = new MergeSorter<Content>(sources, comp);
-  using var writer = new StreamWriter(outputPath);
-  await foreach(var next in mergeSorter.MergeSort()){
-    await writer.WriteLineAsync(next.ToString());
-  }
-
-  Directory.Delete(tempDirectory, true);
+  return fileIndex;
 }

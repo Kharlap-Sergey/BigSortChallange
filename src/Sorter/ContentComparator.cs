@@ -5,14 +5,19 @@ namespace Sorter;
 
 public class ContentComparator : IComparer<Content>
 {
-    public int Compare(Content? x, Content? y)
-    {
-        if (x == y) return 0;
+  public static ContentComparator Default = new ContentComparator();
+  public int Compare(Content? x, Content? y)
+  {
+    if (x == null && y == null) return 0;
+    if (x == null)
+      return -1;
+    if (y == null)
+      return 1;
 
-        var stringComparisonResult = x.String.CompareTo(y.String);
+    var stringComparisonResult = x.String.CompareTo(y.String);
 
-        return stringComparisonResult == 0
-          ? x.Number.CompareTo(y.Number)
-          : stringComparisonResult;
-    }
+    return stringComparisonResult == 0
+      ? x.Number.CompareTo(y.Number)
+      : stringComparisonResult;
+  }
 }
